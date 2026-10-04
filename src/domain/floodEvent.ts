@@ -1,11 +1,3 @@
-/**
- * 积水事件与时间半衰期模型 (Flood event + temporal decay)
- *
- * 纯领域逻辑：描述一次「积水上报」事件，并根据「报告时间 -> 当前时间」
- * 的衰减规则计算其有效性；同时支持「反向退水」解除机制。
- * 无第三方依赖。
- */
-
 /** 数据来源 */
 export type FloodSource = "JS100" | "BMA" | "CROWD";
 
@@ -23,8 +15,16 @@ export interface FloodEvent {
   radiusMeters: number;
   /** 确认水退的票数（反向解除机制） */
   clearedVotes: number;
+  /**
+   * 数据源初始置信度（0~1）。JS100 推文 0.85、BMA 工单 0.9、众包 0.6 等。
+   * 可选：未提供时按来源默认值处理，保证向后兼容。
+   */
+  confidence?: number;
+  /** 简短描述（众包用户输入 / 推文正文摘要），可选 */
+  description?: string;
+  /** 来源链接（推文 URL / 工单 URL），可选 */
+  sourceUrl?: string;
 }
-
 /** 事件的时间有效性状态 */
 export enum FloodValidity {
   /** 0~60 分钟：有效度 100% */
@@ -109,3 +109,4 @@ export function createFloodEvent(
     ...partial,
   };
 }
+

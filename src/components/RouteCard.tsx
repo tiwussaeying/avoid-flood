@@ -1,20 +1,19 @@
 /**
  * RouteCard.tsx —— 单条路线的对比卡片
- * 展示：路线名 / 耗时 / 距离 / 风险徽标 / 途经积水点明细
+ * 展示：路线名 / 耗时 / 距离 / 风险徽标 / 途经积水点明细（含来源徽标与退水按钮）
  */
 import {
   AlertTriangle,
   Clock,
   Droplets,
-  MapPin,
   Route as RouteIcon,
   ShieldCheck,
   Star,
 } from "lucide-react";
 import { DemoRoute } from "../mock/bangkokDemoData.js";
-import { RouteRiskResult, OverallRisk } from "../engine/routeRiskEvaluator.js";
-import { PassabilityStatus } from "../domain/vehicle.js";
+import { RouteRiskResult } from "../engine/routeRiskEvaluator.js";
 import { StatusBadge } from "./StatusBadge.js";
+import { FloodDetailItem } from "./FloodDetailItem.js";
 
 interface Props {
   route: DemoRoute;
@@ -22,21 +21,20 @@ interface Props {
   /** 是否为当前选中用于导航的路线 */
   selected: boolean;
   onSelect: () => void;
+  /** 当前时间（用于相对时间显示） */
+  now: Date;
+  /** 反向退水投票 */
+  onVoteCleared: (floodId: string) => void;
 }
 
-const FLOOD_ID_LABEL: Record<string, string> = {
-  "asok-interchange": "Asok 交叉口",
-  "sukhumvit-71": "Sukhumvit 71 巷口",
-};
-
-/** 把「单车积水点的通行状态」映射到风险徽标色 */
-function hitStatusToRisk(status: PassabilityStatus): OverallRisk {
-  if (status === PassabilityStatus.BLOCKED) return "IMPASSABLE";
-  if (status === PassabilityStatus.CAUTION) return "WARNING";
-  return "SAFE";
-}
-
-export function RouteCard({ route, risk, selected, onSelect }: Props) {
+export function RouteCard({
+  route,
+  risk,
+  selected,
+  onSelect,
+  now,
+  onVoteCleared,
+}: Props) {
   const isBlocked = risk.overallRisk === "IMPASSABLE";
   const isWarning = risk.overallRisk === "WARNING";
 
@@ -49,10 +47,14 @@ export function RouteCard({ route, risk, selected, onSelect }: Props) {
     : "ring-1 ring-[var(--color-edge)]";
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
-      className={`glass w-full rounded-2xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 ${ringCls}`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onSelect();
+      }}
+      className={`glass w-full cursor-pointer rounded-2xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 ${ringCls}`}
     >
       {/* 头部：名称 + 徽标 */}
       <div className="flex items-start justify-between gap-3">
@@ -92,21 +94,15 @@ export function RouteCard({ route, risk, selected, onSelect }: Props) {
 
       {/* 命中积水明细 */}
       {risk.hits.length > 0 && (
-        <div className="mt-3 space-y-1.5 border-t border-[var(--color-edge)] pt-3">
+        <div className="mt-3 space-y-2 border-t border-[var(--color-edge)] pt-3">
           {risk.hits.map((hit) => (
-            <div
+            <FloodDetailItem
               key={hit.flood.id}
-              className="flex items-center justify-between text-xs"
-            >
-              <span className="inline-flex items-center gap-1.5 text-slate-300">
-                <MapPin className="h-3.5 w-3.5 text-slate-500" />
-                {FLOOD_ID_LABEL[hit.flood.id] ?? hit.flood.id}
-                <span className="text-slate-500">
-                  ({hit.flood.waterDepthCm}cm · {hit.flood.source})
-                </span>
-              </span>
-              <StatusBadge risk={hitStatusToRisk(hit.status)} compact />
-            </div>
+              flood={hit.flood}
+              status={hit.status}
+              now={now}
+              onVoteCleared={onVoteCleared}
+            />
           ))}
         </div>
       )}
@@ -128,6 +124,6 @@ export function RouteCard({ route, risk, selected, onSelect }: Props) {
           全程无高危积水，可安全通行
         </div>
       )}
-    </button>
+    </div>
   );
 }
