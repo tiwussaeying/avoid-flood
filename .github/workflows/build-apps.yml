@@ -41,11 +41,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Setup JDK 17
+      # Capacitor 8 生成的 Android 工程要求 Java 21
+      # （capacitor.build.gradle: sourceCompatibility JavaVersion.VERSION_21）
+      - name: Setup JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       # 使用 v4：修复新版 sdkmanager 下 `sdkmanager tools` 报
       # "Failed to find package 'tools'" 的兼容问题
@@ -132,3 +134,4 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             build
+

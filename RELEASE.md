@@ -9,7 +9,7 @@
 | 目标 | 必需环境 |
 |---|---|
 | **PWA（任意设备）** | Node.js ≥ 20 |
-| **Android APK** | Node.js + JDK 17 + Android SDK（或 Android Studio） |
+| **Android APK** | Node.js + **JDK 21**（Capacitor 8 要求）+ Android SDK（或 Android Studio） |
 | **iOS 包** | **macOS + Xcode 15+**（Windows 无法编译 iOS） |
 
 ---
@@ -67,7 +67,7 @@ npx cap open android   # 用 Android Studio 打开
 
 ```bash
 cd android
-./gradlew assembleDebug      # 调试包，产物在 app/build/outputs/apk/debug/
+./gradlew assembleDebug      # 调试包（需 JDK 21），产物在 app/build/outputs/apk/debug/
 ./gradlew assembleRelease    # 正式包（需配置签名）
 ```
 
@@ -164,3 +164,4 @@ avoid-flood/
 | `npx cap sync` 报找不到 webDir | 先执行 `npm run build:pwa` 生成 `dist/` |
 | iOS 打不开 | 必须在 macOS + Xcode 环境，Windows 无法编译 |
 | 离线打不开 | Service Worker 只在产线构建 + http(s) 下生效，用 `npm run preview` 验证 |
+
