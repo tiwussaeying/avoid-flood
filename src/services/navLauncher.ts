@@ -118,8 +118,15 @@ export function buildNavUrl(provider: NavProvider, route: NavRoute): string {
   }
 }
 
-/** 在浏览器新窗口唤起导航（PWA / Web 环境） */
-export function launchNavigation(provider: NavProvider, route: NavRoute): void {
-  const url = buildNavUrl(provider, route);
-  window.open(url, "_blank", "noopener,noreferrer");
+/**
+ * 唤起导航（环境自适应：原生容器用 Capacitor App.openUrl，
+ * 浏览器用 window.open）。异步函数，调用方可不 await。
+ */
+export async function launchNavigation(
+  provider: NavProvider,
+  route: NavRoute,
+): Promise<void> {
+  const { openExternal } = await import("./launch.js");
+  await openExternal(buildNavUrl(provider, route));
 }
+

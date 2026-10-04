@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bangkok FloodNav</string>
+    <string name="title_activity_main">Bangkok FloodNav</string>
+    <string name="package_name">com.floodnav.bangkok</string>
+    <string name="custom_url_scheme">com.floodnav.bangkok</string>
+</resources>

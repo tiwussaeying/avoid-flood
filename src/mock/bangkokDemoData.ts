@@ -8,11 +8,13 @@
 import { FloodEvent, createFloodEvent } from "../domain/floodEvent.js";
 import { LatLng } from "../engine/routeRiskEvaluator.js";
 
+export type LocalizedText = { th: string; en: string; zh: string };
+
 export interface DemoRoute {
   id: string;
-  name: string;
+  name: LocalizedText;
   /** 副标题说明 */
-  subtitle: string;
+  subtitle: LocalizedText;
   polyline: LatLng[];
   /** 预计耗时（分钟） */
   durationMin: number;
@@ -70,8 +72,8 @@ export const FLOOD_EVENTS: FloodEvent[] = [
 export const DEMO_ROUTES: DemoRoute[] = [
   {
     id: "route-asok",
-    name: "主干道 (Sukhumvit 直行)",
-    subtitle: "最快，但穿越 Asok 积水区",
+    name: { th: "ถนนหลัก (สุขุมวิท)", en: "Main road (Sukhumvit)", zh: "主干道 (Sukhumvit 直行)" },
+    subtitle: { th: "เร็วสุด แต่ผ่านพื้นที่น้ำท่วมอโศก", en: "Fastest, but crosses Asok flooding", zh: "最快，但穿越 Asok 积水区" },
     durationMin: 24,
     distanceKm: 11.2,
     polyline: [
@@ -86,8 +88,8 @@ export const DEMO_ROUTES: DemoRoute[] = [
   },
   {
     id: "route-rama4",
-    name: "绕行 Rama IV 高架",
-    subtitle: "主动避开积水，系统推荐",
+    name: { th: "อ้อมพระราม 4 ทางด่วน", en: "Rama IV / expressway detour", zh: "绕行 Rama IV 高架" },
+    subtitle: { th: "หลบน้ำท่วม แนะนำ", en: "Avoids flooding, recommended", zh: "主动避开积水，系统推荐" },
     durationMin: 31,
     distanceKm: 14.8,
     isRecommended: true,
@@ -120,4 +122,6 @@ export const DETOUR_CANDIDATES: LatLng[][] = [
     [13.7120, 100.5600],
   ],
 ];
+
+
 

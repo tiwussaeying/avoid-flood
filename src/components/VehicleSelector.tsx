@@ -1,21 +1,24 @@
 /**
- * VehicleSelector.tsx —— Tab 式车型切换
+ * VehicleSelector.tsx —— Tab 式车型切换（i18n 版）
  */
 import { Bike, Car, Truck } from "lucide-react";
 import { VehicleType } from "../domain/vehicle.js";
+import { useTranslation } from "../i18n/i18n.js";
 
 interface Props {
   value: VehicleType;
   onChange: (v: VehicleType) => void;
 }
 
-const OPTIONS: { type: VehicleType; label: string; Icon: typeof Car }[] = [
-  { type: VehicleType.MOTORCYCLE, label: "摩托", Icon: Bike },
-  { type: VehicleType.SEDAN, label: "轿车", Icon: Car },
-  { type: VehicleType.SUV_PICKUP, label: "皮卡", Icon: Truck },
-];
-
 export function VehicleSelector({ value, onChange }: Props) {
+  const { t } = useTranslation();
+
+  const OPTIONS: { type: VehicleType; label: string; Icon: typeof Car }[] = [
+    { type: VehicleType.MOTORCYCLE, label: t.vehicleMotorcycle, Icon: Bike },
+    { type: VehicleType.SEDAN, label: t.vehicleSedan, Icon: Car },
+    { type: VehicleType.SUV_PICKUP, label: t.vehiclePickup, Icon: Truck },
+  ];
+
   return (
     <div className="glass flex gap-1 rounded-xl p-1">
       {OPTIONS.map(({ type, label, Icon }) => {

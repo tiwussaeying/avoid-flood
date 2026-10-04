@@ -1,36 +1,40 @@
 /**
- * StatusBadge.tsx —— 风险评级徽标（SAFE / WARNING / IMPASSABLE）
+ * StatusBadge.tsx —— 风险评级徽标（i18n 版）
  */
 import { OverallRisk } from "../engine/routeRiskEvaluator.js";
+import { useTranslation } from "../i18n/i18n.js";
 
 interface Props {
   risk: OverallRisk;
   compact?: boolean;
 }
 
-const CONFIG: Record<
-  OverallRisk,
-  { label: string; cls: string; dot: string }
-> = {
+const CLS: Record<OverallRisk, { cls: string; dot: string }> = {
   SAFE: {
-    label: "安全 SAFE",
     cls: "bg-emerald-500/12 text-emerald-300 border-emerald-500/35",
     dot: "bg-emerald-400",
   },
   WARNING: {
-    label: "谨慎 CAUTION",
     cls: "bg-amber-500/12 text-amber-300 border-amber-500/35",
     dot: "bg-amber-400",
   },
   IMPASSABLE: {
-    label: "阻断 BLOCKED",
     cls: "bg-red-500/12 text-red-300 border-red-500/40",
     dot: "bg-red-400",
   },
 };
 
 export function StatusBadge({ risk, compact = false }: Props) {
-  const c = CONFIG[risk];
+  const { t } = useTranslation();
+  const c = CLS[risk];
+
+  const label =
+    risk === "SAFE"
+      ? t.riskSafe
+      : risk === "WARNING"
+        ? t.riskWarning
+        : t.riskImpassable;
+
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold tracking-wide ${c.cls} ${
@@ -38,7 +42,7 @@ export function StatusBadge({ risk, compact = false }: Props) {
       }`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
-      {compact ? c.label.split(" ")[0] : c.label}
+      {label}
     </span>
   );
 }
