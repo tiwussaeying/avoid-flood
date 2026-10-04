@@ -3,3 +3,8 @@ dist/
 *.log
 .DS_Store
 .vite/
+
+preview*.png
+dev*.log
+shot.cjs
+

@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* 深色科技风主题变量（Tailwind v4 @theme） */
+@theme {
+  --color-abyss-950: #0a0d12;
+  --color-abyss-900: #0f131a;
+  --color-abyss-850: #141922;
+  --color-abyss-800: #1a212c;
+  --color-abyss-700: #232c3a;
+  --color-edge: #2a3444;
+  --color-amber-glow: #f5a524;
+  --color-emerald-glow: #2dd4a7;
+  --color-danger-glow: #f4525f;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #1a2333 0%, transparent 60%),
+    var(--color-abyss-950);
+  color: #e6edf6;
+  font-family: "Inter", "Noto Sans Thai", system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 毛玻璃工具类 */
+.glass {
+  background: rgba(20, 25, 34, 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(42, 52, 68, 0.9);
+}
+
+/* 细腻滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3444;
+  border-radius: 999px;
+}
