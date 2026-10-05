@@ -107,4 +107,89 @@ export const th: TranslationDict = {
   destinationFloodedHint: "จุดหมายปลายทางอยู่ในพื้นที่น้ำท่วม",
   navigateNearestSafe: "นำทางไปจุดปลอดภัยที่ใกล้ที่สุด",
   blockedButNavigable: "ทุกเส้นทางต้องผ่านพื้นที่น้ำท่วม ระบบจะนำไปจุดปลอดภัยสุดท้ายก่อนถึงพื้นที่น้ำท่วม — ห้ามขับเข้าน้ำลึก",
+
+  /* ── ฝนรายนาที ── */
+  minuteRain: "ฝนรายนาที",
+  pastMeasured: "30 นาทีที่ผ่านมา",
+  futureForecast: "พยากรณ์ 60 นาทีข้างหน้า",
+  nowLabel: "ตอนนี้",
+  rainStoppingIn: (n) => `ฝนจะหยุดในอีก ${n} นาที`,
+  rainStartingIn: (n) => `ฝนจะเริ่มในอีก ${n} นาที`,
+  rainPeakingIn: (n) => `ฝนหนักสุดในอีก ${n} นาที`,
+  rainSteady: "ความหนักฝนคงที่",
+  rainNone: "ไม่มีฝน",
+  rainLight: "ฝนเบา",
+  rainModerate: "ฝนปานกลาง",
+  rainIntense: "ฝนหนัก",
+
+  /* ── สนามลมและโมเดล ── */
+  windField: "สนามลม",
+  weatherModel: "โมเดล",
+  modelTmd: "TMD",
+  modelGfs: "GFS",
+  modelEcmwf: "ECMWF",
+  modelIcon: "ICON",
+  modelNote: "สลับโมเดลเพื่อเปรียบเทียบพยากรณ์",
+
+  /* ── ไทม์ไลน์ ── */
+  timeline: "ไทม์ไลน์",
+  timelineNow: "ตอนนี้",
+  timelinePast: (h) => `${h} ชั่วโมงที่แล้ว`,
+  timelineFuture: (h) => `+${h} ชั่วโมง`,
+  playAnimation: "เล่น",
+  pauseAnimation: "หยุด",
+
+  /* ── ตัวชี้วัด ── */
+  pressure: "ความดันอากาศ",
+  dewPoint: "จุดน้ำค้าง",
+  uvIndex: "ดัชนีอัลตราไวโอเลต",
+  visibility: "ทัศนวิสัย",
+  cloudCover: "ปริมาณเมฆ",
+  aqi: "คุณภาพอากาศ",
+  aqiGood: "ดี",
+  aqiModerate: "ปานกลาง",
+  aqiUnhealthySensitive: "เริ่มมีผลกับกลุ่มเสี่ยง",
+  aqiUnhealthy: "ไม่ดีต่อสุขภาพ",
+  aqiVeryUnhealthy: "แย่มาก",
+  aqiHazardous: "อันตราย",
+  uvLow: "ต่ำ",
+  uvModerate: "ปานกลาง",
+  uvHigh: "สูง",
+  uvVeryHigh: "สูงมาก",
+  uvExtreme: "สูงสุด",
+
+  /* ── ดาวอังคาร ── */
+  sunrise: "พระอาทิตย์ขึ้น",
+  sunset: "พระอาทิตย์ตก",
+  moonPhase: "ข้างขึ้นข้างแรม",
+  daylight: "ชั่วโมงกลางวัน",
+  moonNew: "ข้างขึ้นตั้งครั้ง",
+  moonWaxingCrescent: "ข้างขึ้นเสี้ยวเสี้ย",
+  moonFirstQuarter: "ข้างขึ้นครึ่งดวง",
+  moonWaxingGibbous: "ข้างขึ้นเสี้ยวเสี้ยใหญ่",
+  moonFull: "ข้างขึ้นเต็มดวง",
+  moonWaningGibbous: "แรมดวง",
+  moonLastQuarter: "แรมครึ่งดวง",
+  moonWaningCrescent: "แรมเสี้ยวเสี้ย",
+
+  /* ── แจ้งเตือนอากาศร้ายแรง ── */
+  severeAlertTitle: "แจ้งเตือนอากาศร้ายแรง",
+  severeAlertBody: "คาดว่าจะมีฝนหนักและน้ำท่วมฉับพลันในเขตกรุงเทพฯ โปรดหลีกเลี่ยงถนนที่ต่ำ",
+  severeAlertFlood: "เตือนน้ำท่วมฉับพลัน",
+  severeAlertWind: "เตือนลมแรง",
+  severeAlertDismiss: "รับทราบ",
+
+  /* ── สถานีอากาศศูนย์ ── */
+  pwsNetwork: "สถานีอากาศใกล้เคียง",
+  pwsStations: (n) => `${n} สถานีรายงาน`,
+  pwsNearest: "ใกล้ที่สุด",
+  pwsMeasured: "วัดจริง",
+  pwsOffline: "ไม่มีข้อมูลสถานี",
+
+  /* ── ระดับความหนักฝน ── */
+  intensityLight: "เบา",
+  intensityModerate: "ปานกลาง",
+  intensityHeavy: "หนัก",
+  intensityViolent: "หนักมาก",
+  mmPerHour: "mm/h",
 };

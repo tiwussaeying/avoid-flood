@@ -94,3 +94,70 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 .animate-float-in { animation: floatIn 460ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ───────────────────────────────────────────────
+   风场流线漂移（对标 Windy 的流动质感）
+   ─────────────────────────────────────────────── */
+@keyframes windDrift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-14px); }
+}
+
+/* ───────────────────────────────────────────────
+   时间轴滑块（对标 Windy / Apple Weather）
+   原生 range 跨浏览器样式统一
+   ─────────────────────────────────────────────── */
+.timeline-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+.timeline-range::-webkit-slider-runnable-track {
+  height: 3px;
+  background: transparent;
+  border-radius: 999px;
+}
+.timeline-range::-moz-range-track {
+  height: 3px;
+  background: transparent;
+  border-radius: 999px;
+}
+.timeline-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6.5px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff, #c7d8f5);
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.75);
+  transition: transform 140ms ease;
+}
+.timeline-range::-webkit-slider-thumb:active {
+  transform: scale(1.18);
+}
+.timeline-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff, #c7d8f5);
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.75);
+}
+.timeline-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid rgba(56, 189, 248, 0.6);
+  outline-offset: 2px;
+}
+
+/* ───────────────────────────────────────────────
+   严重警报脉冲指示条
+   ─────────────────────────────────────────────── */
+@keyframes alertPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.alert-pulse { animation: alertPulse 1.8s ease-in-out infinite; }

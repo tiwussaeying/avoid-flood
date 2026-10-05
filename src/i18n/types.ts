@@ -116,6 +116,89 @@ export interface TranslationDict {
   destinationFloodedHint: string;
   navigateNearestSafe: string;
   blockedButNavigable: string;
+
+  /* ── 分钟级降水（对标 Apple Weather） ── */
+  minuteRain: string;
+  pastMeasured: string;
+  futureForecast: string;
+  nowLabel: string;
+  rainStoppingIn: (n: number) => string;
+  rainStartingIn: (n: number) => string;
+  rainPeakingIn: (n: number) => string;
+  rainSteady: string;
+  rainNone: string;
+  rainLight: string;
+  rainModerate: string;
+  rainIntense: string;
+
+  /* ── 风场与模型（对标 Windy） ── */
+  windField: string;
+  weatherModel: string;
+  modelTmd: string;
+  modelGfs: string;
+  modelEcmwf: string;
+  modelIcon: string;
+  modelNote: string;
+
+  /* ── 时间轴（对标 Windy / Apple） ── */
+  timeline: string;
+  timelineNow: string;
+  timelinePast: (h: number) => string;
+  timelineFuture: (h: number) => string;
+  playAnimation: string;
+  pauseAnimation: string;
+
+  /* ── 综合指标（对标 TWC / AccuWeather） ── */
+  pressure: string;
+  dewPoint: string;
+  uvIndex: string;
+  visibility: string;
+  cloudCover: string;
+  aqi: string;
+  aqiGood: string;
+  aqiModerate: string;
+  aqiUnhealthySensitive: string;
+  aqiUnhealthy: string;
+  aqiVeryUnhealthy: string;
+  aqiHazardous: string;
+  uvLow: string;
+  uvModerate: string;
+  uvHigh: string;
+  uvVeryHigh: string;
+  uvExtreme: string;
+
+  /* ── 日月与天象 ── */
+  sunrise: string;
+  sunset: string;
+  moonPhase: string;
+  daylight: string;
+  moonNew: string;
+  moonWaxingCrescent: string;
+  moonFirstQuarter: string;
+  moonWaxingGibbous: string;
+  moonFull: string;
+  moonWaningGibbous: string;
+  moonLastQuarter: string;
+  moonWaningCrescent: string;
+
+  /* ── 极端天气警报（对标 TWC） ── */
+  severeAlertTitle: string;
+  severeAlertBody: string;
+  severeAlertFlood: string;
+  severeAlertWind: string;
+  severeAlertDismiss: string;
+
+  /* ── 众包气象站（对标 WU） ── */
+  pwsNetwork: string;
+  pwsStations: (n: number) => string;
+  pwsNearest: string;
+  pwsMeasured: string;
+  pwsOffline: string;
+
+  /* ── 降水强度分级 ── */
+  intensityLight: string;
+  intensityModerate: string;
+  intensityHeavy: string;
+  intensityViolent: string;
+  mmPerHour: string;
 }
-
-

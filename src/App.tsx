@@ -13,12 +13,17 @@ import {
   RouteRiskResult,
 } from "./engine/routeRiskEvaluator.js";
 import { DEMO_NOW, FLOOD_EVENTS } from "./mock/bangkokDemoData.js";
+import { scaleDepth, rainScaleAt } from "./engine/timelineWater.js";
 import { PLACES, type Place } from "./mock/places.js";
 import {
+  AIR_QUALITY,
   CANAL_LEVELS,
   CURRENT_WEATHER,
   DAILY_OUTLOOK,
   HOURLY_RAIN,
+  MINUTE_RAIN,
+  SUN_MOON,
+  type WeatherModel,
 } from "./mock/weatherData.js";
 import { buildRoutes, buildDetourCandidates } from "./services/routeBuilder.js";
 import { seedFloodsAlongRoute, mergeFloodEvents } from "./services/floodSeeder.js";
@@ -33,6 +38,14 @@ import { WeatherHero } from "./components/WeatherHero.js";
 import { CanalPanel } from "./components/CanalPanel.js";
 import { DailyOutlookPanel } from "./components/DailyOutlookPanel.js";
 import { RouteSearchBar } from "./components/RouteSearchBar.js";
+import { MinuteRainChart } from "./components/MinuteRainChart.js";
+import { WindField } from "./components/WindField.js";
+import { TimelineScrubber } from "./components/TimelineScrubber.js";
+import { MetricsGrid } from "./components/MetricsGrid.js";
+import { SunMoonPanel } from "./components/SunMoonPanel.js";
+import { PwsPanel } from "./components/PwsPanel.js";
+import { SevereAlertBanner, type SevereAlert } from "./components/SevereAlertBanner.js";
+import { ModelSwitcher } from "./components/ModelSwitcher.js";
 import {
   CrowdReportModal,
   CrowdReportPayload,
@@ -62,6 +75,11 @@ function FloodNavApp() {
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
+  /** 时间轴偏移（小时），负=过去 */
+  const [hoursOffset, setHoursOffset] = useState(0);
+  const [timelinePlaying, setTimelinePlaying] = useState(false);
+  /** 气象模型（对标 Windy 多模型切换） */
+  const [model, setModel] = useState<WeatherModel>("TMD");
 
   const now = DEMO_NOW;
 
@@ -92,6 +110,37 @@ function FloodNavApp() {
     return mergeFloodEvents(floods, seeded);
   }, [builtRoutes, floods, now]);
 
+  /**
+   * 时间轴缩放后的真实积水集合。
+   * 拖时间轴时，每个积水点的水深按 waterScaleAt 曲线演变，
+   * 深度归零的点自动从评估中消失（等价于「水退了」）。
+   */
+  const scaledFloods = useMemo(() => {
+    if (hoursOffset === 0) return routeFloods;
+    return routeFloods.map((f) => ({
+      ...f,
+      waterDepthCm: scaleDepth(f.waterDepthCm, hoursOffset, f.source === "CROWD"),
+    }));
+  }, [routeFloods, hoursOffset]);
+
+  /** 时间轴缩放后的分钟级降水曲线 */
+  const scaledMinuteRain = useMemo(
+    () =>
+      MINUTE_RAIN.map((p) => ({
+        ...p,
+        mmPerHour: Math.round(p.mmPerHour * rainScaleAt(hoursOffset) * 10) / 10,
+      })),
+    [hoursOffset],
+  );
+
+  /** 严重天气警报（对标 TWC） */
+  const severeAlerts = useMemo<SevereAlert[]>(() => {
+    const list: SevereAlert[] = [];
+    if (CURRENT_WEATHER.rainChance >= 85) list.push({ id: "flood-2026-1004", kind: "flood" });
+    if (CURRENT_WEATHER.windKmh >= 22) list.push({ id: "wind-2026-1004", kind: "wind" });
+    return list;
+  }, []);
+
   // ── 风险评估 ──
   const evaluated = useMemo(
     () =>
@@ -99,13 +148,13 @@ function FloodNavApp() {
         built: r,
         risk: evaluateRoute(
           r.polyline,
-          routeFloods,
+          scaledFloods,
           vehicle,
           now,
           detourCandidates,
         ),
       })),
-    [builtRoutes, routeFloods, vehicle, now, detourCandidates],
+    [builtRoutes, scaledFloods, vehicle, now, detourCandidates],
   );
 
   const active = useMemo(() => {
@@ -124,7 +173,7 @@ function FloodNavApp() {
   // 积水风险指数
   const riskIndex = useMemo(() => {
     const rainFactor = CURRENT_WEATHER.rainChance;
-    const floodFactor = Math.min(100, routeFloods.length * 22);
+    const floodFactor = Math.min(100, scaledFloods.length * 22);
     const routeFactor = !active
       ? 0
       : active.risk.overallRisk === "IMPASSABLE"
@@ -133,7 +182,20 @@ function FloodNavApp() {
           ? 60
           : 25;
     return Math.round(rainFactor * 0.3 + floodFactor * 0.3 + routeFactor * 0.4);
-  }, [routeFloods.length, active]);
+  }, [scaledFloods.length, active]);
+
+  /** 随时间轴缩放后的当前天气（温度/降雨量随轴演变） */
+  const timeScaledWeather = useMemo(() => {
+    const rs = rainScaleAt(hoursOffset);
+    return {
+      ...CURRENT_WEATHER,
+      tempC: Math.round(CURRENT_WEATHER.tempC - hoursOffset * 0.6),
+      rainMmLastHour: Math.round(CURRENT_WEATHER.rainMmLastHour * rs * 10) / 10,
+      rainChance: Math.max(0, Math.min(100, Math.round(CURRENT_WEATHER.rainChance * rs))),
+      condition:
+        rs > 0.75 ? "heavyRain" : rs > 0.35 ? "rain" : "cloudy",
+    } as typeof CURRENT_WEATHER;
+  }, [hoursOffset]);
 
   // ── 导航参数 ──
   const navRoute = useMemo(() => {
@@ -152,8 +214,8 @@ function FloodNavApp() {
    */
   const safeStopPoint = useMemo<LatLng | null>(() => {
     if (!active || !blockedSelected) return null;
-    return findLastSafePoint(active.built.polyline, routeFloods, now);
-  }, [active, blockedSelected, routeFloods, now]);
+    return findLastSafePoint(active.built.polyline, scaledFloods, now);
+  }, [active, blockedSelected, scaledFloods, now]);
 
   const degradedNav = blockedSelected && safeStopPoint !== null;
 
@@ -270,14 +332,38 @@ function FloodNavApp() {
             </p>
           )}
 
+          {/* ① 极端天气警报（对标 The Weather Channel） */}
+          <SevereAlertBanner alerts={severeAlerts} />
+
+          {/* ② 气象模型切换（对标 Windy） */}
+          <ModelSwitcher value={model} onChange={setModel} />
+
           {/* ② 天气主卡 */}
           <WeatherHero
-            weather={CURRENT_WEATHER}
+            weather={timeScaledWeather}
             hourly={HOURLY_RAIN}
             riskIndex={riskIndex}
           />
 
-          {/* ③ 车型切换 */}
+          {/* ③ 分钟级降水（对标 Apple Weather） */}
+          <MinuteRainChart series={scaledMinuteRain} />
+
+          {/* ④ 风场流线（对标 Windy） */}
+          <WindField
+            model={model}
+            windKmh={timeScaledWeather.windKmh}
+            windDeg={timeScaledWeather.windDeg}
+          />
+
+          {/* ⑤ 时间轴拖拽（对标 Windy / Apple） */}
+          <TimelineScrubber
+            value={hoursOffset}
+            onChange={setHoursOffset}
+            playing={timelinePlaying}
+            onTogglePlay={() => setTimelinePlaying((v) => !v)}
+          />
+
+          {/* ⑥ 车型切换 */}
           <section>
             <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/40">
               <Zap className="h-3 w-3" /> {t.selectVehicle}
@@ -293,7 +379,7 @@ function FloodNavApp() {
                   {t.routeComparison}
                 </h2>
                 <span className="text-[10.5px] text-white/35">
-                  {t.floodPointsNow} {routeFloods.length}
+                  {t.floodPointsNow} {scaledFloods.length}
                 </span>
               </div>
               {evaluated.map(({ built, risk }) => {
@@ -335,6 +421,15 @@ function FloodNavApp() {
 
           {/* ⑥ 河道水位 */}
           <CanalPanel canals={CANAL_LEVELS} />
+
+          {/* 综合气象指标（对标 TWC / AccuWeather） */}
+          <MetricsGrid weather={timeScaledWeather} air={AIR_QUALITY} />
+
+          {/* 日出日落与月相 */}
+          <SunMoonPanel data={SUN_MOON} />
+
+          {/* 众包气象站网络（对标 Weather Underground） */}
+          <PwsPanel floods={scaledFloods} reference={origin?.coords ?? null} />
 
           {/* ⑦ 未来天气 */}
           <DailyOutlookPanel days={DAILY_OUTLOOK} />

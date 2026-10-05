@@ -109,5 +109,89 @@ export const en: TranslationDict = {
   destinationFloodedHint: "Your destination is flooded",
   navigateNearestSafe: "Navigate to nearest safe point",
   blockedButNavigable: "All routes cross flooding. Navigation will guide you to the last safe point before the flooded section - do not drive into deep water.",
-};
 
+  /* ── Minute rain (Apple Weather) ── */
+  minuteRain: "Minute-by-minute rain",
+  pastMeasured: "Past 30m measured",
+  futureForecast: "Next 60m forecast",
+  nowLabel: "now",
+  rainStoppingIn: (n) => `Rain stopping in ${n} min`,
+  rainStartingIn: (n) => `Rain starting in ${n} min`,
+  rainPeakingIn: (n) => `Heaviest rain in ${n} min`,
+  rainSteady: "Rain intensity steady",
+  rainNone: "No rain",
+  rainLight: "Light",
+  rainModerate: "Moderate",
+  rainIntense: "Intense",
+
+  /* ── Wind field & models (Windy) ── */
+  windField: "Wind field",
+  weatherModel: "Model",
+  modelTmd: "TMD",
+  modelGfs: "GFS",
+  modelEcmwf: "ECMWF",
+  modelIcon: "ICON",
+  modelNote: "Switch models to compare forecasts",
+
+  /* ── Timeline ── */
+  timeline: "Timeline",
+  timelineNow: "Now",
+  timelinePast: (h) => `${h}h ago`,
+  timelineFuture: (h) => `+${h}h`,
+  playAnimation: "Play",
+  pauseAnimation: "Pause",
+
+  /* ── Metrics ── */
+  pressure: "Pressure",
+  dewPoint: "Dew point",
+  uvIndex: "UV index",
+  visibility: "Visibility",
+  cloudCover: "Cloud cover",
+  aqi: "Air quality",
+  aqiGood: "Good",
+  aqiModerate: "Moderate",
+  aqiUnhealthySensitive: "Unhealthy (sensitive)",
+  aqiUnhealthy: "Unhealthy",
+  aqiVeryUnhealthy: "Very unhealthy",
+  aqiHazardous: "Hazardous",
+  uvLow: "Low",
+  uvModerate: "Moderate",
+  uvHigh: "High",
+  uvVeryHigh: "Very high",
+  uvExtreme: "Extreme",
+
+  /* ── Sun & moon ── */
+  sunrise: "Sunrise",
+  sunset: "Sunset",
+  moonPhase: "Moon",
+  daylight: "Daylight",
+  moonNew: "New moon",
+  moonWaxingCrescent: "Waxing crescent",
+  moonFirstQuarter: "First quarter",
+  moonWaxingGibbous: "Waxing gibbous",
+  moonFull: "Full moon",
+  moonWaningGibbous: "Waning gibbous",
+  moonLastQuarter: "Last quarter",
+  moonWaningCrescent: "Waning crescent",
+
+  /* ── Severe alerts ── */
+  severeAlertTitle: "Severe weather alert",
+  severeAlertBody: "Heavy rain and flash flooding expected across the Bangkok metropolitan area. Avoid low-lying roads.",
+  severeAlertFlood: "Flash flood warning",
+  severeAlertWind: "Strong wind advisory",
+  severeAlertDismiss: "Dismiss",
+
+  /* ── PWS network (WU) ── */
+  pwsNetwork: "Nearby weather stations",
+  pwsStations: (n) => `${n} stations reporting`,
+  pwsNearest: "Nearest",
+  pwsMeasured: "Measured",
+  pwsOffline: "No station data",
+
+  /* ── Intensity classes ── */
+  intensityLight: "Light",
+  intensityModerate: "Moderate",
+  intensityHeavy: "Heavy",
+  intensityViolent: "Violent",
+  mmPerHour: "mm/h",
+};
