@@ -54,4 +54,25 @@ export const th: TranslationDict = {
   disclaimer:
     "ข้อมูลระดับน้ำเป็นการประมาณแบบไดนามิก อาจล่าช้ากว่าสภาพจริง โปรดปฏิบัติตามเจ้าหน้าที่ ห้ามขับฝ่าน้ำท่วมเด็ดขาด",
   languageLabel: "ภาษา",
+
+  /* ── 天气模块 ── */
+  condHeavyRain: "ฝนตกหนัก",
+  condRain: "ฝนตก",
+  condCloudy: "มีเมฆมาก",
+  feelsLike: "รู้สึกเหมือน",
+  humidity: "ความชื้น",
+  wind: "ลม",
+  rainChance: "โอกาสฝน",
+  rainLastHour: "ฝน 1 ชม.",
+  hourlyRain: "ฝนรายชั่วโมง",
+  dailyOutlook: "คาดการณ์ล่วงหน้า",
+  canalLevel: "ระดับคลอง",
+  warningLevel: "ระดับเตือนภัย",
+  dayToday: "วันนี้",
+  dayTomorrow: "พรุ่งนี้",
+  dayD2: "มะรืน",
+  dayD3: "อีก 3 วัน",
+  floodRiskIndex: "ดัชนีความเสี่ยงน้ำท่วม",
+  riskLevelNote: "ประเมินจากระดับน้ำและเส้นทางของคุณ",
 };
+

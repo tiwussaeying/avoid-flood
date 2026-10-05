@@ -1,70 +1,96 @@
 @import "tailwindcss";
 
-/* 深色科技风主题变量（Tailwind v4 @theme） */
+/* ───────────────────────────────────────────────
+   气象级深色主题 · 强化对比版
+   ─────────────────────────────────────────────── */
 @theme {
-  --color-abyss-950: #0a0d12;
-  --color-abyss-900: #0f131a;
-  --color-abyss-850: #141922;
-  --color-abyss-800: #1a212c;
-  --color-abyss-700: #232c3a;
-  --color-edge: #2a3444;
-  --color-amber-glow: #f5a524;
-  --color-emerald-glow: #2dd4a7;
-  --color-danger-glow: #f4525f;
+  --color-void-950: #05070e;
+  --color-void-900: #0a0e1c;
+  --color-void-850: #0f1428;
+  --color-void-800: #151c36;
+
+  --color-card: #131b34;
+  --color-card-hi: #1c2748;
+  --color-edge: #2b3760;
+  --color-edge-hi: #3d4d7d;
+
+  --color-rain: #38bdf8;
+  --color-rain-deep: #0284c7;
+  --color-storm: #a78bfa;
+  --color-safe: #34d399;
+  --color-warn: #fbbf24;
+  --color-danger: #fb5c6c;
+  --color-flood: #22d3ee;
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
+html, body, #root { height: 100%; }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(1200px 600px at 50% -10%, #1a2333 0%, transparent 60%),
-    var(--color-abyss-950);
-  color: #e6edf6;
-  font-family: "Inter", "Noto Sans Thai", system-ui, -apple-system, "Segoe UI",
-    sans-serif;
+  background: var(--color-void-950);
+  color: #eaf1ff;
+  font-family: "Inter", "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-/* 毛玻璃工具类 */
+/* 天空背景：更强的色彩层次 */
+.sky-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(800px 420px at 12% -8%, rgba(56, 189, 248, 0.28), transparent 62%),
+    radial-gradient(620px 380px at 92% 2%, rgba(167, 139, 250, 0.22), transparent 58%),
+    radial-gradient(900px 520px at 50% 108%, rgba(34, 211, 238, 0.16), transparent 65%),
+    linear-gradient(180deg, #0d1430 0%, #080b18 55%, #05070e 100%);
+}
+
+/* 玻璃卡片：更强的边界与阴影，让卡片「浮」起来 */
 .glass {
-  background: rgba(20, 25, 34, 0.72);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(42, 52, 68, 0.9);
+  background: linear-gradient(180deg, rgba(28,39,72,0.82), rgba(19,27,52,0.70));
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(61, 77, 125, 0.55);
+  box-shadow:
+    0 10px 34px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255,255,255,0.06) inset;
 }
 
-/* 细腻滚动条 */
-::-webkit-scrollbar {
-  width: 6px;
+/* 天气主卡：鲜明渐变 + 光晕 */
+.weather-hero {
+  background:
+    radial-gradient(560px 300px at 88% -18%, rgba(56,189,248,0.42), transparent 62%),
+    radial-gradient(480px 260px at 8% 118%, rgba(167,139,250,0.32), transparent 60%),
+    linear-gradient(140deg, #1e2b55 0%, #16203f 50%, #101731 100%);
+  border: 1px solid rgba(86, 116, 178, 0.55);
+  box-shadow:
+    0 20px 56px rgba(2, 132, 199, 0.20),
+    0 1px 0 rgba(255,255,255,0.09) inset;
 }
-::-webkit-scrollbar-thumb {
-  background: #2a3444;
+
+/* 降雨强度条：渐变 + 发光 */
+.rain-bar {
+  background: linear-gradient(180deg, #7dd3fc 0%, #38bdf8 45%, #0284c7 100%);
   border-radius: 999px;
-}
-/* 抽屉滑入动画 */
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0.6;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  transition: height 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 8px;
 }
 
-/* 悬浮按钮脉冲 */
-@keyframes pulseGlow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(45, 212, 167, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(45, 212, 167, 0);
-  }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--color-edge-hi); border-radius: 999px; }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
 }
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.55); }
+  50% { box-shadow: 0 0 0 14px rgba(34, 211, 238, 0); }
+}
+@keyframes floatIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-float-in { animation: floatIn 460ms cubic-bezier(0.16, 1, 0.3, 1) both; }

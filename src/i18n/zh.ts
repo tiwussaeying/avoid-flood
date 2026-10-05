@@ -54,4 +54,25 @@ export const zh: TranslationDict = {
   disclaimer:
     "水位数据为动态估算值，仅供参考，可能滞后于现场实际。请服从现场交警指挥，严禁强行涉水，注意人身安全。",
   languageLabel: "语言",
+
+  /* ── 天气模块 ── */
+  condHeavyRain: "暴雨",
+  condRain: "降雨",
+  condCloudy: "多云",
+  feelsLike: "体感",
+  humidity: "湿度",
+  wind: "风速",
+  rainChance: "降雨概率",
+  rainLastHour: "近1h雨量",
+  hourlyRain: "逐时降雨",
+  dailyOutlook: "未来天气",
+  canalLevel: "河道水位",
+  warningLevel: "警戒水位",
+  dayToday: "今天",
+  dayTomorrow: "明天",
+  dayD2: "后天",
+  dayD3: "大后天",
+  floodRiskIndex: "积水风险指数",
+  riskLevelNote: "综合水位与所选路线评估",
 };
+

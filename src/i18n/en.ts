@@ -56,4 +56,25 @@ export const en: TranslationDict = {
   disclaimer:
     "Water levels are dynamic estimates and may lag reality. Follow on-site officers and never drive through floodwater.",
   languageLabel: "Language",
+
+  /* ── Weather module ── */
+  condHeavyRain: "Heavy Rain",
+  condRain: "Rain",
+  condCloudy: "Cloudy",
+  feelsLike: "Feels like",
+  humidity: "Humidity",
+  wind: "Wind",
+  rainChance: "Rain chance",
+  rainLastHour: "Rain (1h)",
+  hourlyRain: "Hourly rain",
+  dailyOutlook: "Outlook",
+  canalLevel: "Canal level",
+  warningLevel: "Warning level",
+  dayToday: "Today",
+  dayTomorrow: "Tomorrow",
+  dayD2: "Day 3",
+  dayD3: "Day 4",
+  floodRiskIndex: "Flood risk index",
+  riskLevelNote: "Estimated from water levels and your route",
 };
+

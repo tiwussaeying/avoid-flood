@@ -1,8 +1,11 @@
 /**
- * App.tsx —— Bangkok FloodNav 主界面（阶段 4：i18n + PWA + Capacitor）
+ * App.tsx —— Bangkok FloodNav 主界面（气象级 UI 改版）
+ *
+ * 数据：天气(weatherData) + 积水(FloodStore) → 风险评估 → UI
+ * 布局：天空背景 → 天气主卡 → 车型 → 路线对比 → 河道 → 未来天气
  */
 import { useMemo, useState } from "react";
-import { CloudRain, Droplets, Plus, Zap } from "lucide-react";
+import { CloudRain, Plus, Zap } from "lucide-react";
 import { VehicleType } from "./domain/vehicle.js";
 import {
   evaluateRoute,
@@ -19,12 +22,21 @@ import {
   ORIGIN,
   ORIGIN_NAME,
 } from "./mock/bangkokDemoData.js";
+import {
+  CANAL_LEVELS,
+  CURRENT_WEATHER,
+  DAILY_OUTLOOK,
+  HOURLY_RAIN,
+} from "./mock/weatherData.js";
 import { launchNavigation, NavProvider } from "./services/navLauncher.js";
 import { VehicleSelector } from "./components/VehicleSelector.js";
 import { RouteCard } from "./components/RouteCard.js";
 import { WaypointPanel } from "./components/WaypointPanel.js";
 import { ActionBar } from "./components/ActionBar.js";
 import { LanguageSwitcher } from "./components/LanguageSwitcher.js";
+import { WeatherHero } from "./components/WeatherHero.js";
+import { CanalPanel } from "./components/CanalPanel.js";
+import { DailyOutlookPanel } from "./components/DailyOutlookPanel.js";
 import {
   CrowdReportModal,
   CrowdReportPayload,
@@ -79,6 +91,19 @@ function FloodNavApp() {
 
   const blockedSelected = active.risk.overallRisk === "IMPASSABLE";
 
+  // 积水风险指数：结合降雨强度、活跃积水点数量、当前路线风险
+  const riskIndex = useMemo(() => {
+    const rainFactor = CURRENT_WEATHER.rainChance;
+    const floodFactor = Math.min(100, floods.length * 22);
+    const routeFactor =
+      active.risk.overallRisk === "IMPASSABLE"
+        ? 100
+        : active.risk.overallRisk === "WARNING"
+          ? 60
+          : 25;
+    return Math.round(rainFactor * 0.3 + floodFactor * 0.3 + routeFactor * 0.4);
+  }, [floods.length, active.risk.overallRisk]);
+
   const navRoute = useMemo(
     () => ({
       origin: ORIGIN,
@@ -105,98 +130,114 @@ function FloodNavApp() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
-      <header className="glass sticky top-0 z-20 px-4 pb-3.5 pt-[max(14px,env(safe-area-inset-top))]">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-cyan-600 shadow-lg shadow-cyan-500/25">
-              <Droplets className="h-5 w-5 text-slate-950" />
+    <>
+      {/* 天空背景层 */}
+      <div className="sky-bg" aria-hidden />
+
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col">
+        {/* Header */}
+        <header className="sticky top-0 z-30 border-b border-white/5 bg-[#080b18]/80 px-4 pb-2.5 pt-[max(14px,env(safe-area-inset-top))] backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-rain)] to-[var(--color-storm)] shadow-lg shadow-sky-500/30">
+                <CloudRain className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-[15px] font-bold leading-tight tracking-tight text-white">
+                  {t.appName}
+                </h1>
+                <p className="text-[10.5px] leading-tight text-white/45">
+                  {t.appTagline}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-[15px] font-bold leading-tight tracking-tight text-white">
-                {t.appName}
-              </h1>
-              <p className="text-[10.5px] leading-tight text-slate-400">
-                {t.appTagline}
-              </p>
+            <LanguageSwitcher />
+          </div>
+        </header>
+
+        {/* 主体 */}
+        <main className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 pt-2">
+          {/* ① 天气主卡（视觉焦点） */}
+          <WeatherHero
+            weather={CURRENT_WEATHER}
+            hourly={HOURLY_RAIN}
+            riskIndex={riskIndex}
+          />
+
+          {/* ② 车型切换 */}
+          <section>
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/40">
+              <Zap className="h-3 w-3" /> {t.selectVehicle}
             </div>
-          </div>
-          <LanguageSwitcher />
-        </div>
+            <VehicleSelector value={vehicle} onChange={setVehicle} />
+          </section>
 
-        <div className="mt-2.5">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/12 px-2.5 py-1 text-[11px] font-semibold text-amber-300">
-            <CloudRain className="h-3.5 w-3.5" />
-            {t.stormAlert}
-          </span>
-        </div>
-      </header>
+          {/* ③ 路线风险对比 */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+                {t.routeComparison}
+              </h2>
+              <span className="text-[10.5px] text-white/35">
+                {t.floodPointsNow} {floods.length}
+              </span>
+            </div>
+            {evaluated.map(({ route, risk }) => (
+              <RouteCard
+                key={route.id}
+                route={route}
+                risk={risk}
+                selected={active.route.id === route.id}
+                onSelect={() => setSelectedId(route.id)}
+                now={now}
+                onVoteCleared={voteCleared}
+              />
+            ))}
+          </section>
 
-      <main className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 pt-4">
-        <section>
-          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-500">
-            <Zap className="h-3 w-3" /> {t.selectVehicle}
-          </div>
-          <VehicleSelector value={vehicle} onChange={setVehicle} />
-        </section>
+          {/* ④ 避险途经点 */}
+          <WaypointPanel
+            waypoints={active.risk.avoidanceWaypoints as LatLng[]}
+            originName={ORIGIN_NAME}
+            destinationName={DESTINATION_NAME}
+          />
 
-        <section className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-              {t.routeComparison}
-            </h2>
-            <span className="text-[10.5px] text-slate-500">
-              {t.floodPointsNow} {floods.length}
-            </span>
-          </div>
-          {evaluated.map(({ route, risk }) => (
-            <RouteCard
-              key={route.id}
-              route={route}
-              risk={risk}
-              selected={active.route.id === route.id}
-              onSelect={() => setSelectedId(route.id)}
-              now={now}
-              onVoteCleared={voteCleared}
-            />
-          ))}
-        </section>
+          {/* ⑤ 河道水位 */}
+          <CanalPanel canals={CANAL_LEVELS} />
 
-        <WaypointPanel
-          waypoints={active.risk.avoidanceWaypoints as LatLng[]}
-          originName={ORIGIN_NAME}
-          destinationName={DESTINATION_NAME}
+          {/* ⑥ 未来天气 */}
+          <DailyOutlookPanel days={DAILY_OUTLOOK} />
+        </main>
+
+        {/* 悬浮上报按钮 */}
+        <button
+          type="button"
+          onClick={() => setReportOpen(true)}
+          className="fixed bottom-40 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-flood)] to-[var(--color-rain-deep)] text-white shadow-xl shadow-cyan-500/40 transition-transform hover:scale-105 active:scale-95"
+          style={{ animation: "pulseGlow 2.6s ease-in-out infinite" }}
+          aria-label={t.reportTitle}
+        >
+          <Plus className="h-6 w-6" strokeWidth={2.8} />
+        </button>
+
+        <ActionBar
+          onGoogle={() => handleLaunch("google")}
+          onWaze={() => handleLaunch("waze")}
+          onApple={() => handleLaunch("apple")}
+          disabled={blockedSelected}
         />
-      </main>
 
-      <button
-        type="button"
-        onClick={() => setReportOpen(true)}
-        className="fixed bottom-40 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 text-slate-950 shadow-xl shadow-cyan-500/30 transition-transform hover:scale-105 active:scale-95"
-        style={{ animation: "pulseGlow 2.4s ease-in-out infinite" }}
-        aria-label={t.reportTitle}
-      >
-        <Plus className="h-6 w-6" strokeWidth={2.8} />
-      </button>
-
-      <ActionBar
-        onGoogle={() => handleLaunch("google")}
-        onWaze={() => handleLaunch("waze")}
-        onApple={() => handleLaunch("apple")}
-        disabled={blockedSelected}
-      />
-
-      <CrowdReportModal
-        open={reportOpen}
-        onClose={() => setReportOpen(false)}
-        onSubmit={handleSubmitReport}
-        locationLabel={`${ORIGIN_NAME} → ${DESTINATION_NAME}`}
-      />
-    </div>
+        <CrowdReportModal
+          open={reportOpen}
+          onClose={() => setReportOpen(false)}
+          onSubmit={handleSubmitReport}
+          locationLabel={`${ORIGIN_NAME} → ${DESTINATION_NAME}`}
+        />
+      </div>
+    </>
   );
 }
 
-/** 根组件：注入 i18n 与 FloodStore */
 export default function App() {
   return (
     <I18nProvider>
@@ -206,3 +247,4 @@ export default function App() {
     </I18nProvider>
   );
 }
+

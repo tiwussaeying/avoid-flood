@@ -63,4 +63,25 @@ export interface TranslationDict {
   blockedNavHint: string;
   disclaimer: string;
   languageLabel: string;
+
+  /* ── 天气模块 ── */
+  condHeavyRain: string;
+  condRain: string;
+  condCloudy: string;
+  feelsLike: string;
+  humidity: string;
+  wind: string;
+  rainChance: string;
+  rainLastHour: string;
+  hourlyRain: string;
+  dailyOutlook: string;
+  canalLevel: string;
+  warningLevel: string;
+  dayToday: string;
+  dayTomorrow: string;
+  dayD2: string;
+  dayD3: string;
+  floodRiskIndex: string;
+  riskLevelNote: string;
 }
+
