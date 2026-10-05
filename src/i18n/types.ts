@@ -83,5 +83,39 @@ export interface TranslationDict {
   dayD3: string;
   floodRiskIndex: string;
   riskLevelNote: string;
+
+  /* ── 地点搜索 ── */
+  searchOriginPlaceholder: string;
+  searchDestPlaceholder: string;
+  searchPlaceholder: string;
+  searchRouteBtn: string;
+  pickOrigin: string;
+  pickDestination: string;
+  useMyLocation: string;
+  noPlaceFound: string;
+  routeFrom: (from: string) => string;
+  routeTo: (to: string) => string;
+  locationDenied: string;
+  routeMain: string;
+  routeDetour: string;
+  routeAlt: string;
+  routeDist: (km: number) => string;
+
+  /* ── 自由地址搜索与网络后补 ── */
+  searchAnyPlaceHint: string;
+  searchingNetwork: string;
+  sourceLocal: string;
+  sourceOsm: string;
+  sourceCoords: string;
+  useThisAddress: (q: string) => string;
+  noNetworkResult: string;
+  floodOnRoute: (n: number) => string;
+  noFloodOnRoute: string;
+  seededNote: string;
+  originFloodedHint: string;
+  destinationFloodedHint: string;
+  navigateNearestSafe: string;
+  blockedButNavigable: string;
 }
+
 

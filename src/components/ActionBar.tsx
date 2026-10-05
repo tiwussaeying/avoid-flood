@@ -10,9 +10,17 @@ interface Props {
   onApple: () => void;
   disabled?: boolean;
   disabledHint?: string;
+  /** 降级模式：全部路线阻断，但仍可导航至「积水前的安全停靠点」 */
+  degraded?: boolean;
 }
 
-export function ActionBar({ onGoogle, onWaze, onApple, disabled = false }: Props) {
+export function ActionBar({
+  onGoogle,
+  onWaze,
+  onApple,
+  disabled = false,
+  degraded = false,
+}: Props) {
   const { t } = useTranslation();
 
   return (
@@ -21,13 +29,23 @@ export function ActionBar({ onGoogle, onWaze, onApple, disabled = false }: Props
         type="button"
         disabled={disabled}
         onClick={onGoogle}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3.5 text-[15px] font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+        className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 text-[15px] font-bold text-slate-950 shadow-lg transition-all duration-200 hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 ${
+          degraded
+            ? "bg-gradient-to-r from-amber-400 to-orange-500 shadow-amber-500/20"
+            : "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/20"
+        }`}
       >
         <Navigation className="h-4 w-4" />
-        {t.navGoogle}
+        {degraded ? t.navigateNearestSafe : t.navGoogle}
       </button>
 
-      {disabled && (
+      {degraded && (
+        <p className="mt-2 text-center text-[10.5px] leading-relaxed text-amber-300/90">
+          {t.blockedButNavigable}
+        </p>
+      )}
+
+      {disabled && !degraded && (
         <p className="mt-2 text-center text-[11px] text-red-300/90">
           {t.blockedNavHint}
         </p>

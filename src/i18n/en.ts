@@ -76,5 +76,38 @@ export const en: TranslationDict = {
   dayD3: "Day 4",
   floodRiskIndex: "Flood risk index",
   riskLevelNote: "Estimated from water levels and your route",
+
+  /* ── Place search ── */
+  searchOriginPlaceholder: "Start location",
+  searchDestPlaceholder: "Where to go?",
+  searchPlaceholder: "Search places...",
+  searchRouteBtn: "Find flood-safe route",
+  pickOrigin: "Pick start",
+  pickDestination: "Pick destination",
+  useMyLocation: "Use my location",
+  noPlaceFound: "No places found",
+  routeFrom: (f) => `From ${f}`,
+  routeTo: (t) => `To ${t}`,
+  locationDenied: "Unable to access location",
+  routeMain: "Main route",
+  routeDetour: "Flood-avoiding route",
+  routeAlt: "Alternative route",
+  routeDist: (km) => `${km.toFixed(1)} km`,
+
+  /* ── Free-address search ── */
+  searchAnyPlaceHint: "Type any address, landmark or coordinates",
+  searchingNetwork: "Searching open map data...",
+  sourceLocal: "Saved",
+  sourceOsm: "OpenStreetMap",
+  sourceCoords: "Coordinates",
+  useThisAddress: (q) => `Use "${q}"`,
+  noNetworkResult: "No match found online",
+  floodOnRoute: (n) => `${n} flood point(s) on this route`,
+  noFloodOnRoute: "No flooding on this route",
+  seededNote: "Demo water levels (Bangkok hotspots)",
+  originFloodedHint: "Your starting point is flooded",
+  destinationFloodedHint: "Your destination is flooded",
+  navigateNearestSafe: "Navigate to nearest safe point",
+  blockedButNavigable: "All routes cross flooding. Navigation will guide you to the last safe point before the flooded section - do not drive into deep water.",
 };
 

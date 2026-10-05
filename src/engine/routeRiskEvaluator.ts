@@ -41,6 +41,13 @@ export interface RouteRiskResult {
   hits: FloodHit[];
   /** 仅当 IMPASSABLE 时非空，供外部导航强制规避 */
   avoidanceWaypoints: LatLng[];
+  /**
+   * 起/终点本身处于积水区内。
+   * 此时「全部路线阻断」是正确结果（目的地就在水里），
+   * UI 应区别于「可绕行的途中积水」。
+   */
+  originFlooded: boolean;
+  destinationFlooded: boolean;
 }
 
 /** Haversine 点点距离（米） */
@@ -203,7 +210,59 @@ export function evaluateRoute(
     );
   }
 
-  return { overallRisk, hits, avoidanceWaypoints };
+  // 端点淹没判定：起/终点自身落入某个有效积水点的 buffer
+  const originFlooded = isPointFlooded(polyline[0], floods, currentTime);
+  const destinationFlooded = isPointFlooded(
+    polyline[polyline.length - 1],
+    floods,
+    currentTime,
+  );
+
+  return {
+    overallRisk,
+    hits,
+    avoidanceWaypoints,
+    originFlooded,
+    destinationFlooded,
+  };
+}
+
+/** 判定单点是否落入任何有效积水点的影响半径内 */
+function isPointFlooded(
+  point: LatLng | undefined,
+  floods: FloodEvent[],
+  currentTime: Date,
+): boolean {
+  if (!point) return false;
+  return floods.some((f) => {
+    if (!calculateFloodStatus(f, currentTime).isActive) return false;
+    return haversineMeters(point, [f.latitude, f.longitude]) <= f.radiusMeters;
+  });
+}
+
+/**
+ * 从路线上取「最后一个未被淹没的几何点」。
+ *
+ * 用途：全部路线均被判定 IMPASSABLE 时，仍需给用户一个
+ * 可安全停靠的目标（积水路段前的最后一个安全点），
+ * 避免 UI 出现「什么都不能做」的死路。
+ *
+ * @returns 安全停靠点；若起点即被淹，返回 null
+ */
+export function findLastSafePoint(
+  polyline: LatLng[],
+  floods: FloodEvent[],
+  currentTime: Date,
+): LatLng | null {
+  if (polyline.length === 0) return null;
+
+  // 从起点往终点扫描，记下最后一个安全点
+  let lastSafe: LatLng | null = null;
+  for (const pt of polyline) {
+    if (isPointFlooded(pt, floods, currentTime)) break;
+    lastSafe = pt;
+  }
+  return lastSafe;
 }
 
 /**
@@ -231,9 +290,18 @@ function buildAvoidanceWaypoints(
 
     if (safeAnchors.length === 0) continue;
 
-    // 取该安全段的等间距采样（间隔=clearance），至少 1 个点，最多 2 个
+    // 取该安全段的等间距采样（间隔=clearance）
     const sampled = extractWaypoints(safeAnchors, clearanceMeters);
+
     for (const wp of sampled) {
+      // 剔除起终点附近的采样点：
+      // 它们不是「中间绕行节点」，出现在 UI 上会与起点重复
+      const endpoints = [candidate[0], candidate[candidate.length - 1]];
+      const tooCloseToEndpoint = endpoints.some(
+        (ep) => haversineMeters(wp, ep) < clearanceMeters / 2,
+      );
+      if (tooCloseToEndpoint) continue;
+
       result.push(wp);
       if (result.length >= 2) return result;
     }

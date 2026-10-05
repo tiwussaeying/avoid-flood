@@ -74,5 +74,37 @@ export const th: TranslationDict = {
   dayD3: "อีก 3 วัน",
   floodRiskIndex: "ดัชนีความเสี่ยงน้ำท่วม",
   riskLevelNote: "ประเมินจากระดับน้ำและเส้นทางของคุณ",
-};
 
+  /* ── 地点搜索 ── */
+  searchOriginPlaceholder: "จุดเริ่มต้น ตำแหน่งของคุณ",
+  searchDestPlaceholder: "ปลายทาง ต้องการไปที่ไหน",
+  searchPlaceholder: "ค้นหาสถานที่...",
+  searchRouteBtn: "ค้นหาเส้นทางหลบน้ำ",
+  pickOrigin: "เลือกจุดเริ่มต้น",
+  pickDestination: "เลือกปลายทาง",
+  useMyLocation: "ใช้ตำแหน่งของฉัน",
+  noPlaceFound: "ไม่พบสถานที่",
+  routeFrom: (f) => `จาก ${f}`,
+  routeTo: (t) => `ไป ${t}`,
+  locationDenied: "ไม่สามารถเข้าถึงตำแหน่งได้",
+  routeMain: "เส้นทางหลัก",
+  routeDetour: "เส้นทางอ้อมหลบน้ำ",
+  routeAlt: "เส้นทางสำรอง",
+  routeDist: (km) => `${km.toFixed(1)} กม.`,
+
+  /* ── ค้นหาที่อยู่อิสระ ── */
+  searchAnyPlaceHint: "พิมพ์ที่อยู่ สถานที่ หรือพิกัด",
+  searchingNetwork: "กำลังค้นหาจากแผนที่เปิด...",
+  sourceLocal: "บันทึกไว้",
+  sourceOsm: "OpenStreetMap",
+  sourceCoords: "พิกัด",
+  useThisAddress: (q) => `ใช้ "${q}"`,
+  noNetworkResult: "ไม่พบผลจากเครือข่าย",
+  floodOnRoute: (n) => `เส้นทางนี้พบน้ำท่วม ${n} จุด`,
+  noFloodOnRoute: "เส้นทางนี้ไม่มีน้ำท่วม",
+  seededNote: "ระดับน้ำตัวอย่าง (จุดน้ำท่วมกรุงเทพ)",
+  originFloodedHint: "จุดเริ่มต้นอยู่ในพื้นที่น้ำท่วม",
+  destinationFloodedHint: "จุดหมายปลายทางอยู่ในพื้นที่น้ำท่วม",
+  navigateNearestSafe: "นำทางไปจุดปลอดภัยที่ใกล้ที่สุด",
+  blockedButNavigable: "ทุกเส้นทางต้องผ่านพื้นที่น้ำท่วม ระบบจะนำไปจุดปลอดภัยสุดท้ายก่อนถึงพื้นที่น้ำท่วม — ห้ามขับเข้าน้ำลึก",
+};

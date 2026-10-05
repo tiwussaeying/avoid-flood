@@ -74,5 +74,37 @@ export const zh: TranslationDict = {
   dayD3: "大后天",
   floodRiskIndex: "积水风险指数",
   riskLevelNote: "综合水位与所选路线评估",
-};
 
+  /* ── 地点搜索 ── */
+  searchOriginPlaceholder: "起点 · 我的位置",
+  searchDestPlaceholder: "终点 · 要去哪里",
+  searchPlaceholder: "搜索地点…",
+  searchRouteBtn: "查找避水路线",
+  pickOrigin: "选择起点",
+  pickDestination: "选择终点",
+  useMyLocation: "使用我的位置",
+  noPlaceFound: "未找到匹配地点",
+  routeFrom: (f) => `从 ${f}`,
+  routeTo: (t) => `到 ${t}`,
+  locationDenied: "无法获取定位",
+  routeMain: "主干道",
+  routeDetour: "避水路线",
+  routeAlt: "备选路线",
+  routeDist: (km) => `${km.toFixed(1)} 公里`,
+
+  /* ── 自由地址搜索 ── */
+  searchAnyPlaceHint: "可输入任意地址、地标或经纬度",
+  searchingNetwork: "正在检索开放地图数据...",
+  sourceLocal: "已收录",
+  sourceOsm: "OpenStreetMap",
+  sourceCoords: "坐标",
+  useThisAddress: (q) => `使用「${q}」`,
+  noNetworkResult: "网络上未找到匹配",
+  floodOnRoute: (n) => `本路线命中 ${n} 个积水点`,
+  noFloodOnRoute: "本路线无积水",
+  seededNote: "演示水位（曼谷常淹点）",
+  originFloodedHint: "起点处于积水区",
+  destinationFloodedHint: "终点处于积水区",
+  navigateNearestSafe: "导航至最近安全点",
+  blockedButNavigable: "全部路线均会穿过积水区。系统会带你到积水路段前的最后一个安全停靠点——严禁驾入深水。",
+};

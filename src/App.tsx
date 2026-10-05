@@ -1,33 +1,28 @@
 /**
- * App.tsx —— Bangkok FloodNav 主界面（气象级 UI 改版）
+ * App.tsx —— Bangkok FloodNav 主界面
  *
- * 数据：天气(weatherData) + 积水(FloodStore) → 风险评估 → UI
- * 布局：天空背景 → 天气主卡 → 车型 → 路线对比 → 河道 → 未来天气
+ * 用户流程：选择起终点（搜索/定位） → 动态生成路线 → 评估积水风险 → 导航
  */
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CloudRain, Plus, Zap } from "lucide-react";
 import { VehicleType } from "./domain/vehicle.js";
 import {
   evaluateRoute,
+  findLastSafePoint,
   LatLng,
   RouteRiskResult,
 } from "./engine/routeRiskEvaluator.js";
-import {
-  DEMO_NOW,
-  DEMO_ROUTES,
-  DESTINATION,
-  DESTINATION_NAME,
-  DETOUR_CANDIDATES,
-  FLOOD_EVENTS,
-  ORIGIN,
-  ORIGIN_NAME,
-} from "./mock/bangkokDemoData.js";
+import { DEMO_NOW, FLOOD_EVENTS } from "./mock/bangkokDemoData.js";
+import { PLACES, type Place } from "./mock/places.js";
 import {
   CANAL_LEVELS,
   CURRENT_WEATHER,
   DAILY_OUTLOOK,
   HOURLY_RAIN,
 } from "./mock/weatherData.js";
+import { buildRoutes, buildDetourCandidates } from "./services/routeBuilder.js";
+import { seedFloodsAlongRoute, mergeFloodEvents } from "./services/floodSeeder.js";
+import { makeCurrentLocationPlace } from "./services/placeSearch.js";
 import { launchNavigation, NavProvider } from "./services/navLauncher.js";
 import { VehicleSelector } from "./components/VehicleSelector.js";
 import { RouteCard } from "./components/RouteCard.js";
@@ -37,6 +32,7 @@ import { LanguageSwitcher } from "./components/LanguageSwitcher.js";
 import { WeatherHero } from "./components/WeatherHero.js";
 import { CanalPanel } from "./components/CanalPanel.js";
 import { DailyOutlookPanel } from "./components/DailyOutlookPanel.js";
+import { RouteSearchBar } from "./components/RouteSearchBar.js";
 import {
   CrowdReportModal,
   CrowdReportPayload,
@@ -44,94 +40,189 @@ import {
 import { FloodStoreProvider, useFloodStore } from "./store/floodStore.js";
 import { I18nProvider, useTranslation } from "./i18n/i18n.js";
 
-interface EvaluatedRoute {
-  route: (typeof DEMO_ROUTES)[number];
-  risk: RouteRiskResult;
-}
-
 const RISK_RANK: Record<RouteRiskResult["overallRisk"], number> = {
   IMPASSABLE: 3,
   WARNING: 2,
   SAFE: 1,
 };
 
+/** 默认起终点：曼谷两大地标 */
+const DEFAULT_ORIGIN = PLACES.find((p) => p.id === "siam-paragon")!;
+const DEFAULT_DEST = PLACES.find((p) => p.id === "bts-thonglo")!;
+
 function FloodNavApp() {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const { floods, voteCleared, addCrowdReport } = useFloodStore();
+
   const [vehicle, setVehicle] = useState<VehicleType>(VehicleType.SEDAN);
+  const [origin, setOrigin] = useState<Place | null>(DEFAULT_ORIGIN);
+  const [destination, setDestination] = useState<Place | null>(DEFAULT_DEST);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState<LatLng | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
 
   const now = DEMO_NOW;
 
-  const evaluated: EvaluatedRoute[] = useMemo(
+  const placeLabel = useCallback(
+    (p: Place): string =>
+      lang === "th" ? p.nameTh : lang === "zh" ? p.nameZh : p.nameEn,
+    [lang],
+  );
+
+  // ── 动态生成路线（起终点变化时重算） ──
+  const builtRoutes = useMemo(() => {
+    if (!origin || !destination) return [];
+    return buildRoutes(origin.coords, destination.coords);
+  }, [origin, destination]);
+
+  const detourCandidates = useMemo(() => {
+    if (!origin || !destination) return [];
+    return buildDetourCandidates(origin.coords, destination.coords);
+  }, [origin, destination]);
+
+  // ── 沿路线走廊动态布设拟真积水点（演示环境下保证任意起终点都有可评估数据）──
+  // 真实产品替换点：此处改为订阅 BMA / JS100 / 气象局洪水 API 的实时数据流。
+  const routeFloods = useMemo(() => {
+    if (builtRoutes.length === 0) return floods;
+    // 以主路 + 绕行走廊为布点依据，确保「主干道被淹、绕行安全」的对比可复现
+    const corridor = builtRoutes.flatMap((r) => r.polyline);
+    const seeded = seedFloodsAlongRoute(corridor, { maxCount: 3, severity: "severe", now });
+    return mergeFloodEvents(floods, seeded);
+  }, [builtRoutes, floods, now]);
+
+  // ── 风险评估 ──
+  const evaluated = useMemo(
     () =>
-      DEMO_ROUTES.map((route) => ({
-        route,
+      builtRoutes.map((r) => ({
+        built: r,
         risk: evaluateRoute(
-          route.polyline,
-          floods,
+          r.polyline,
+          routeFloods,
           vehicle,
           now,
-          DETOUR_CANDIDATES,
+          detourCandidates,
         ),
       })),
-    [floods, vehicle, now],
+    [builtRoutes, routeFloods, vehicle, now, detourCandidates],
   );
 
   const active = useMemo(() => {
     if (selectedId) {
-      const chosen = evaluated.find((e) => e.route.id === selectedId);
+      const chosen = evaluated.find((e) => e.built.id === selectedId);
       if (chosen) return chosen;
     }
+    if (evaluated.length === 0) return null;
     return [...evaluated].sort(
       (a, b) => RISK_RANK[b.risk.overallRisk] - RISK_RANK[a.risk.overallRisk],
     )[0];
   }, [evaluated, selectedId]);
 
-  const blockedSelected = active.risk.overallRisk === "IMPASSABLE";
+  const blockedSelected = active?.risk.overallRisk === "IMPASSABLE";
 
-  // 积水风险指数：结合降雨强度、活跃积水点数量、当前路线风险
+  // 积水风险指数
   const riskIndex = useMemo(() => {
     const rainFactor = CURRENT_WEATHER.rainChance;
-    const floodFactor = Math.min(100, floods.length * 22);
-    const routeFactor =
-      active.risk.overallRisk === "IMPASSABLE"
+    const floodFactor = Math.min(100, routeFloods.length * 22);
+    const routeFactor = !active
+      ? 0
+      : active.risk.overallRisk === "IMPASSABLE"
         ? 100
         : active.risk.overallRisk === "WARNING"
           ? 60
           : 25;
     return Math.round(rainFactor * 0.3 + floodFactor * 0.3 + routeFactor * 0.4);
-  }, [floods.length, active.risk.overallRisk]);
+  }, [routeFloods.length, active]);
 
-  const navRoute = useMemo(
-    () => ({
-      origin: ORIGIN,
-      destination: DESTINATION,
+  // ── 导航参数 ──
+  const navRoute = useMemo(() => {
+    if (!origin || !destination || !active) return null;
+    return {
+      origin: origin.coords,
+      destination: destination.coords,
       waypoints: active.risk.avoidanceWaypoints as LatLng[],
-    }),
-    [active],
-  );
+    };
+  }, [origin, destination, active]);
+
+  /**
+   * 降级导航目标：当所选路线 IMPASSABLE 时，
+   * 把终点改为「积水路段前的最后一个安全停靠点」，
+   * 确保用户在全部路线被阻断时仍有可执行的下一步。
+   */
+  const safeStopPoint = useMemo<LatLng | null>(() => {
+    if (!active || !blockedSelected) return null;
+    return findLastSafePoint(active.built.polyline, routeFloods, now);
+  }, [active, blockedSelected, routeFloods, now]);
+
+  const degradedNav = blockedSelected && safeStopPoint !== null;
 
   const handleLaunch = (provider: NavProvider) => {
+    if (!navRoute) return;
+
+    // 降级：全阻断但存在安全停靠点 -> 导航至该点
+    if (degradedNav && safeStopPoint) {
+      void launchNavigation(provider, {
+        origin: navRoute.origin,
+        destination: safeStopPoint,
+        waypoints: [],
+      });
+      return;
+    }
+
     if (blockedSelected) return;
     void launchNavigation(provider, navRoute);
   };
 
+  // ── 获取用户定位 ──
+  const handleUseMyLocation = useCallback(() => {
+    if (!("geolocation" in navigator)) {
+      setLocError(t.locationDenied);
+      return;
+    }
+    setLocating(true);
+    setLocError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords: LatLng = [pos.coords.latitude, pos.coords.longitude];
+        setUserLocation(coords);
+        setOrigin(makeCurrentLocationPlace(coords, t.useMyLocation));
+        setLocating(false);
+      },
+      () => {
+        setLocError(t.locationDenied);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  }, [t]);
+
   const handleSubmitReport = (payload: CrowdReportPayload) => {
-    const midLat = (ORIGIN[0] + DESTINATION[0]) / 2;
-    const midLng = (ORIGIN[1] + DESTINATION[1]) / 2;
+    // 众包点落在当前路线中点附近
+    const base = origin?.coords ?? [13.7462, 100.5347];
+    const dest = destination?.coords ?? [13.7245, 100.5785];
     addCrowdReport({
-      latitude: midLat,
-      longitude: midLng,
+      latitude: (base[0] + dest[0]) / 2,
+      longitude: (base[1] + dest[1]) / 2,
       waterDepthCm: payload.waterDepthCm,
       description: payload.description || t.sourceCrowd,
     });
   };
 
+  const routeTitle = (built: { kind: "main" | "detour" | "alt" }): string =>
+    built.kind === "main"
+      ? t.routeMain
+      : built.kind === "alt"
+        ? t.routeAlt
+        : t.routeDetour;
+
+  const routeSubtitle =
+    origin && destination
+      ? `${t.routeFrom(placeLabel(origin))} · ${t.routeTo(placeLabel(destination))}`
+      : undefined;
+
   return (
     <>
-      {/* 天空背景层 */}
       <div className="sky-bg" aria-hidden />
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col">
@@ -155,16 +246,38 @@ function FloodNavApp() {
           </div>
         </header>
 
-        {/* 主体 */}
-        <main className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 pt-2">
-          {/* ① 天气主卡（视觉焦点） */}
+        <main className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 pt-3">
+          {/* ① 起终点搜索（核心输入） */}
+          <RouteSearchBar
+            origin={origin}
+            destination={destination}
+            onOriginChange={(p) => {
+              setOrigin(p);
+              setSelectedId(null);
+            }}
+            onDestinationChange={(p) => {
+              setDestination(p);
+              setSelectedId(null);
+            }}
+            userLocation={userLocation}
+            onUseMyLocation={handleUseMyLocation}
+            locating={locating}
+          />
+
+          {locError && (
+            <p className="rounded-xl border border-red-500/25 bg-red-500/10 px-3 py-2 text-[11px] text-red-300">
+              {locError}
+            </p>
+          )}
+
+          {/* ② 天气主卡 */}
           <WeatherHero
             weather={CURRENT_WEATHER}
             hourly={HOURLY_RAIN}
             riskIndex={riskIndex}
           />
 
-          {/* ② 车型切换 */}
+          {/* ③ 车型切换 */}
           <section>
             <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-white/40">
               <Zap className="h-3 w-3" /> {t.selectVehicle}
@@ -172,44 +285,62 @@ function FloodNavApp() {
             <VehicleSelector value={vehicle} onChange={setVehicle} />
           </section>
 
-          {/* ③ 路线风险对比 */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-[11px] font-medium uppercase tracking-wider text-white/40">
-                {t.routeComparison}
-              </h2>
-              <span className="text-[10.5px] text-white/35">
-                {t.floodPointsNow} {floods.length}
-              </span>
-            </div>
-            {evaluated.map(({ route, risk }) => (
-              <RouteCard
-                key={route.id}
-                route={route}
-                risk={risk}
-                selected={active.route.id === route.id}
-                onSelect={() => setSelectedId(route.id)}
-                now={now}
-                onVoteCleared={voteCleared}
-              />
-            ))}
-          </section>
+          {/* ④ 路线风险对比 */}
+          {evaluated.length > 0 ? (
+            <section className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-[11px] font-medium uppercase tracking-wider text-white/40">
+                  {t.routeComparison}
+                </h2>
+                <span className="text-[10.5px] text-white/35">
+                  {t.floodPointsNow} {routeFloods.length}
+                </span>
+              </div>
+              {evaluated.map(({ built, risk }) => {
+                // 推荐标记：该路线为当前优选且无无法通行风险
+                const isRecommended =
+                  active?.built.id === built.id &&
+                  risk.overallRisk !== "IMPASSABLE";
+                return (
+                  <RouteCard
+                    key={built.id}
+                    title={routeTitle(built)}
+                    subtitle={routeSubtitle}
+                    durationMin={built.durationMin}
+                    distanceKm={built.distanceKm}
+                    risk={risk}
+                    selected={active?.built.id === built.id}
+                    isRecommended={isRecommended}
+                    onSelect={() => setSelectedId(built.id)}
+                    now={now}
+                    onVoteCleared={voteCleared}
+                  />
+                );
+              })}
+            </section>
+          ) : (
+            <section className="glass rounded-2xl p-6 text-center">
+              <p className="text-[13px] text-slate-400">{t.pickOrigin} / {t.pickDestination}</p>
+            </section>
+          )}
 
-          {/* ④ 避险途经点 */}
-          <WaypointPanel
-            waypoints={active.risk.avoidanceWaypoints as LatLng[]}
-            originName={ORIGIN_NAME}
-            destinationName={DESTINATION_NAME}
-          />
+          {/* ⑤ 避险途经点 */}
+          {active && (
+            <WaypointPanel
+              waypoints={active.risk.avoidanceWaypoints as LatLng[]}
+              originName={origin ? placeLabel(origin) : "—"}
+              destinationName={destination ? placeLabel(destination) : "—"}
+            />
+          )}
 
-          {/* ⑤ 河道水位 */}
+          {/* ⑥ 河道水位 */}
           <CanalPanel canals={CANAL_LEVELS} />
 
-          {/* ⑥ 未来天气 */}
+          {/* ⑦ 未来天气 */}
           <DailyOutlookPanel days={DAILY_OUTLOOK} />
         </main>
 
-        {/* 悬浮上报按钮 */}
+        {/* 悬浮上报 */}
         <button
           type="button"
           onClick={() => setReportOpen(true)}
@@ -224,14 +355,19 @@ function FloodNavApp() {
           onGoogle={() => handleLaunch("google")}
           onWaze={() => handleLaunch("waze")}
           onApple={() => handleLaunch("apple")}
-          disabled={blockedSelected}
+          disabled={!!blockedSelected && !degradedNav}
+          degraded={degradedNav}
         />
 
         <CrowdReportModal
           open={reportOpen}
           onClose={() => setReportOpen(false)}
           onSubmit={handleSubmitReport}
-          locationLabel={`${ORIGIN_NAME} → ${DESTINATION_NAME}`}
+          locationLabel={
+            origin && destination
+              ? `${placeLabel(origin)} → ${placeLabel(destination)}`
+              : "—"
+          }
         />
       </div>
     </>
@@ -247,4 +383,3 @@ export default function App() {
     </I18nProvider>
   );
 }
-
