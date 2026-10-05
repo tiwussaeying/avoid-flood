@@ -40,6 +40,27 @@ describe("动态路线结构", () => {
     }
   });
 
+  it("绕行代价随行程长度退化（长途不会绕成两倍）", () => {
+    const pairs: [string, [number, number]][] = [
+      ["ThongLo", [13.7245, 100.5785]],
+      ["Bangna", [13.6663, 100.6550]],
+      ["Airport", [13.69, 100.7501]],
+      ["DonMueang", [13.9126, 100.6068]],
+    ];
+    const ratios: number[] = [];
+    for (const [, dest] of pairs) {
+      const routes = buildRoutes(SAFE_ORIGIN, dest);
+      const main = routes.find((r) => r.kind === "main")!;
+      const detour = routes.find((r) => r.kind === "detour")!;
+      const ratio = detour.distanceKm / main.distanceKm;
+      ratios.push(ratio);
+      // 任何行程下绕行不得超过 1.9 倍
+      expect(ratio).toBeLessThan(1.9);
+    }
+    // 越长的行程，相对绕行代价应越低（非严格单调，允许小波动）
+    expect(ratios[ratios.length - 1]).toBeLessThan(ratios[0]);
+  });
+
   it("起终点重合时返回退化路线且不抛异常", () => {
     const routes = buildRoutes(SAFE_ORIGIN, SAFE_ORIGIN);
     expect(routes).toHaveLength(1);

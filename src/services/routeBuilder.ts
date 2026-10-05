@@ -97,12 +97,18 @@ export function buildRoutes(
     ];
   }
 
+  // 弯曲量随行程距离衰减：长途可借道其他主干道，
+  // 绕行代价相对更小；短途只能坑弯走。避免 24km 行程绕成 44km 的荒谬结果。
+  const straightKmForBow = haversineMeters(origin, destination) / 1000;
+  // 5km 以内：1.0 倍；40km 以上：0.32 倍
+  const bowScale = Math.max(0.32, Math.min(1, 1.04 - straightKmForBow * 0.018));
+
   // 主路：近乎直线的城市主干道（bow 很小，符合真实最短路径）
   const mainPoly = interpolate(origin, destination, 6, 0.01);
-  // 绕行 A：向一侧大幅偏移（南侧高架，过渡段更长→距离更远）
-  const detourPoly = interpolate(origin, destination, 6, 0.72);
-  // 辅路 B：反侧偏移但幅度较小（更贴近直线，距离更近）
-  const altDetour = interpolate(origin, destination, 6, -0.46);
+  // 绕行 A：向一侧偏移（高架/外环）
+  const detourPoly = interpolate(origin, destination, 6, 0.72 * bowScale);
+  // 辅路 B：反侧偏移，幅度更小（贴近主路）
+  const altDetour = interpolate(origin, destination, 6, -0.46 * bowScale);
 
   const mainKm = polylineLengthKm(mainPoly);
   const detourKm = polylineLengthKm(detourPoly);
@@ -144,8 +150,11 @@ export function buildDetourCandidates(
   origin: LatLng,
   destination: LatLng,
 ): LatLng[][] {
+  const straightKmForBow = haversineMeters(origin, destination) / 1000;
+  const bowScale = Math.max(0.32, Math.min(1, 1.04 - straightKmForBow * 0.018));
+
   return [
-    interpolate(origin, destination, 5, 0.75),
-    interpolate(origin, destination, 5, -0.75),
+    interpolate(origin, destination, 5, 0.75 * bowScale),
+    interpolate(origin, destination, 5, -0.75 * bowScale),
   ];
 }

@@ -14,7 +14,7 @@ import {
 } from "./engine/routeRiskEvaluator.js";
 import { DEMO_NOW, FLOOD_EVENTS } from "./mock/bangkokDemoData.js";
 import { scaleDepth, rainScaleAt } from "./engine/timelineWater.js";
-import { PLACES, type Place } from "./mock/places.js";
+import type { Place } from "./mock/places.js";
 import {
   AIR_QUALITY,
   CANAL_LEVELS,
@@ -59,17 +59,14 @@ const RISK_RANK: Record<RouteRiskResult["overallRisk"], number> = {
   SAFE: 1,
 };
 
-/** 默认起终点：曼谷两大地标 */
-const DEFAULT_ORIGIN = PLACES.find((p) => p.id === "siam-paragon")!;
-const DEFAULT_DEST = PLACES.find((p) => p.id === "bts-thonglo")!;
-
 function FloodNavApp() {
   const { t, lang } = useTranslation();
   const { floods, voteCleared, addCrowdReport } = useFloodStore();
 
   const [vehicle, setVehicle] = useState<VehicleType>(VehicleType.SEDAN);
-  const [origin, setOrigin] = useState<Place | null>(DEFAULT_ORIGIN);
-  const [destination, setDestination] = useState<Place | null>(DEFAULT_DEST);
+  // 起终点默认为空：不预设任何地点，用户点击输入时才展开搜索
+  const [origin, setOrigin] = useState<Place | null>(null);
+  const [destination, setDestination] = useState<Place | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);

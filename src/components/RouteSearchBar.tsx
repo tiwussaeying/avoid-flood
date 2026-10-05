@@ -1,16 +1,19 @@
 /**
- * RouteSearchBar.tsx —— 起终点搜索栏
+ * RouteSearchBar.tsx —— 起终点输入（点击才展开，Google Maps 风格）
  *
- * 核心交互入口：用户可输入「任意地址 / 地标 / 经纬度」，不再局限于本地 POI 库。
+ * 设计原则（按用户要求）：
+ *   - 空白态：只显示「输入起点」「输入终点」两个空槽位，不预设任何地点
+ *   - 点击槽位 → 全屏搜索面板打开，自动聚焦输入框、自动弹出键盘
+ *   - 支持任意地址 / 地标 / 经纬度（本地库 → 坐标 → OpenStreetMap）
+ *   - 原地输入 + 联想列表，选中后立即回到主界面并触发重算
  *
- * 三级解析（见 services/geocoding.ts）：
- *   本地已收录地点 -> 坐标直填 -> OpenStreetMap Nominatim 在线检索
- * 网络检索做 450ms 防抖 + 请求序号防竞态，弱网/断网自动降级，绝不阻塞输入。
+ * 网络检索 450ms 防抖 + 请求序号防竞态，断网自动降级，绝不阻塞输入。
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
   Building2,
+  Clock,
   Cross,
   Globe,
   HardDrive,
@@ -25,7 +28,7 @@ import {
 import { useTranslation } from "../i18n/i18n.js";
 import { searchPlaces, type SearchResult } from "../services/placeSearch.js";
 import { resolvePlaceQuery, type GeocodeHit } from "../services/geocoding.js";
-import type { Place } from "../mock/places.js";
+import { PLACES, type Place } from "../mock/places.js";
 import type { LatLng } from "../engine/routeRiskEvaluator.js";
 
 type Field = "origin" | "destination";
@@ -61,11 +64,7 @@ function CategoryIcon({ category }: { category: Place["category"] }) {
 }
 
 /** 数据来源徽标 */
-function SourceTag({
-  kind,
-}: {
-  kind: GeocodeHit["origin_"];
-}) {
+function SourceTag({ kind }: { kind: GeocodeHit["origin_"] }) {
   const { t } = useTranslation();
   if (kind === "local") {
     return (
@@ -109,12 +108,22 @@ export function RouteSearchBar({
   /** 请求序号：丢弃过期响应，避免快速输入时结果错乱 */
   const reqSeq = useRef(0);
 
-  // 面板打开时聚焦输入框
+  // 面板打开时聚焦输入框并弹出键盘
   useEffect(() => {
     if (activeField) {
-      const id = window.setTimeout(() => inputRef.current?.focus(), 80);
+      const id = window.setTimeout(() => inputRef.current?.focus(), 90);
       return () => window.clearTimeout(id);
     }
+  }, [activeField]);
+
+  // Esc 关闭面板
+  useEffect(() => {
+    if (!activeField) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveField(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [activeField]);
 
   // 本地候选：始终即时可用（离线也能选）
@@ -166,7 +175,7 @@ export function RouteSearchBar({
     setRemoteHits([]);
   };
 
-  /** 直接把当前输入的原始文本当作目标（在线检索无结果时的兜底提示） */
+  /** 直接把当前输入的原始文本当作目标（在线检索无结果时的兜底） */
   const commitRawQuery = async () => {
     const q = query.trim();
     if (!q) return;
@@ -193,15 +202,26 @@ export function RouteSearchBar({
   const displayName = (p: Place): string =>
     lang === "th" ? p.nameTh : lang === "zh" ? p.nameZh : p.nameEn;
 
+  /** 常用地点：仅在有定位时展示最近的两处，避免首屏堆积 */
+  const recentPlaces = useMemo(() => {
+    if (!userLocation) return [];
+    return searchPlaces("", lang, userLocation, 2).map((r) => r.place);
+  }, [lang, userLocation]);
+
   const showRemoteList = localResults.length === 0 && remoteHits.length > 0;
   const showRemoteEmpty =
-    localResults.length === 0 && !remoteLoading && remoteHits.length === 0 && query.trim().length > 1;
+    localResults.length === 0 &&
+    !remoteLoading &&
+    remoteHits.length === 0 &&
+    query.trim().length > 1;
+  const bothFilled = Boolean(origin && destination);
 
   return (
     <section className="glass animate-float-in rounded-2xl p-3">
-      {/* 起终点行 */}
+      {/* 起终点输入槽位：空白态只有占位符，不含任何预设地点 */}
       <div className="flex items-center gap-2">
         <div className="flex flex-1 flex-col gap-1.5">
+          {/* 起点 */}
           <button
             type="button"
             onClick={() => openField("origin")}
@@ -211,8 +231,29 @@ export function RouteSearchBar({
             <span className={`flex-1 truncate text-[13px] ${origin ? "text-white" : "text-slate-500"}`}>
               {origin ? displayName(origin) : t.searchOriginPlaceholder}
             </span>
+            {origin && (
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label="clear origin"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOriginChange(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.stopPropagation();
+                    onOriginChange(null);
+                  }
+                }}
+                className="shrink-0 rounded p-0.5 text-slate-500 hover:text-slate-300"
+              >
+                <X className="h-3 w-3" />
+              </span>
+            )}
           </button>
 
+          {/* 终点 */}
           <button
             type="button"
             onClick={() => openField("destination")}
@@ -222,6 +263,26 @@ export function RouteSearchBar({
             <span className={`flex-1 truncate text-[13px] ${destination ? "text-white" : "text-slate-500"}`}>
               {destination ? displayName(destination) : t.searchDestPlaceholder}
             </span>
+            {destination && (
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label="clear destination"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDestinationChange(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.stopPropagation();
+                    onDestinationChange(null);
+                  }
+                }}
+                className="shrink-0 rounded p-0.5 text-slate-500 hover:text-slate-300"
+              >
+                <X className="h-3 w-3" />
+              </span>
+            )}
           </button>
         </div>
 
@@ -230,7 +291,8 @@ export function RouteSearchBar({
           <button
             type="button"
             onClick={swap}
-            className="flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-[var(--color-edge)] bg-black/25 text-slate-300 transition-colors hover:bg-white/10"
+            disabled={!origin && !destination}
+            className="flex h-[38px] w-[38px] items-center justify-center rounded-xl border border-[var(--color-edge)] bg-black/25 text-slate-300 transition-colors hover:bg-white/10 disabled:opacity-35"
             aria-label="swap"
           >
             <ArrowUpDown className="h-4 w-4" />
@@ -247,17 +309,19 @@ export function RouteSearchBar({
         </div>
       </div>
 
-      <button
-        type="button"
-        disabled={!origin || !destination}
-        onClick={() => setActiveField(null)}
-        className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--color-rain)] to-[var(--color-storm)] px-4 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-sky-500/20 transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-35"
-      >
-        <Search className="h-4 w-4" />
-        {t.searchRouteBtn}
-      </button>
+      {/* 未选全时不显示 CTA，避免遮挡 */}
+      {bothFilled && (
+        <button
+          type="button"
+          onClick={() => setActiveField(null)}
+          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--color-rain)] to-[var(--color-storm)] px-4 py-2.5 text-[13px] font-bold text-white shadow-lg shadow-sky-500/20 transition-all hover:brightness-110 active:scale-[0.99]"
+        >
+          <Search className="h-4 w-4" />
+          {t.searchRouteBtn}
+        </button>
+      )}
 
-      {/* 搜索面板 */}
+      {/* 搜索面板（点击槽位后才出现） */}
       {activeField && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <button
@@ -282,7 +346,7 @@ export function RouteSearchBar({
               </button>
             </div>
 
-            {/* 输入框 */}
+            {/* 输入框：自动聚焦、弹出键盘 */}
             <div className="mt-3 flex items-center gap-2 rounded-xl border border-[var(--color-edge-hi)] bg-black/40 px-3 py-2.5">
               <Search className="h-4 w-4 shrink-0 text-slate-500" />
               <input
@@ -293,14 +357,36 @@ export function RouteSearchBar({
                   if (e.key === "Enter" && query.trim()) void commitRawQuery();
                 }}
                 placeholder={t.searchPlaceholder}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 className="flex-1 bg-transparent text-[13px] text-white placeholder:text-slate-600 focus:outline-none"
               />
               {query && (
-                <button type="button" onClick={() => setQuery("")} className="text-slate-500 hover:text-slate-300">
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="shrink-0 text-slate-500 hover:text-slate-300"
+                >
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
+
+            {/* 「我的位置」快捷入口 */}
+            <button
+              type="button"
+              onClick={() => {
+                onUseMyLocation();
+                setActiveField(null);
+              }}
+              className="mt-2.5 flex w-full items-center gap-3 rounded-xl border border-[var(--color-rain)]/30 bg-[var(--color-rain)]/10 px-3 py-2.5 text-left transition-colors hover:bg-[var(--color-rain)]/18"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-rain)]/18 text-[var(--color-rain)]">
+                <LocateFixed className="h-4 w-4" />
+              </span>
+              <span className="text-[13px] font-medium text-sky-200">{t.useMyLocation}</span>
+            </button>
 
             <p className="mt-2 text-[10.5px] text-slate-500">{t.searchAnyPlaceHint}</p>
 
@@ -312,6 +398,13 @@ export function RouteSearchBar({
                   <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-sky-400/30 border-t-sky-400" />
                   {t.searchingNetwork}
                 </div>
+              )}
+
+              {/* 空查询 + 有定位：展示最近地点 */}
+              {!query && recentPlaces.length > 0 && (
+                <p className="mb-1 px-3 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                  {t.pwsNearest}
+                </p>
               )}
 
               {/* 本地结果 */}
@@ -389,11 +482,6 @@ export function RouteSearchBar({
                   </span>
                 </button>
               )}
-
-              {/* 初始无输入时提示 */}
-              {!query && localResults.length === 0 && (
-                <p className="py-6 text-center text-[12px] text-slate-500">{t.noPlaceFound}</p>
-              )}
             </div>
           </div>
         </div>
@@ -401,3 +489,8 @@ export function RouteSearchBar({
     </section>
   );
 }
+
+/** 供 App 使用的热门地点快捷项（无预设默认值，仅暴露常量） */
+export const QUICK_PLACES = PLACES.slice(0, 6);
+
+export { Clock };
